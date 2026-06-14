@@ -1,7 +1,7 @@
 {
   "name": "@repo/db",
   "version": "1.0.0",
-  "main": "./src/index.ts",
+  "main":"./index.ts",
   "type": "module",
   "scripts": {
     "generate": "drizzle-kit generate",
