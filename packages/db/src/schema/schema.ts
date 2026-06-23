@@ -1,10 +1,11 @@
 import { pgTable,  text, timestamp, uuid, numeric, index } from "drizzle-orm/pg-core";
-import { sideEnum, typeEnum,statusEnum,marketStatusEnum,outcomeEnum } from "./enum";
+import {  typeEnum,statusEnum,marketStatusEnum, } from "./enum";
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   walletAddress: text('wallet_address').notNull().unique(),
   usdcBalance: numeric('usdc_balance', { precision: 18, scale: 6 }).default('0'),
+  lockedBalance: numeric('locked_balance', { precision: 18, scale: 6 }).default('0'),
   createdAt: timestamp('created_at').defaultNow(),
 });
 export const markets=pgTable("market",{
@@ -13,20 +14,27 @@ export const markets=pgTable("market",{
   description: text('description').notNull(),
   resolution: text('resolution').notNull(),
   status: marketStatusEnum('status').default('OPEN'),
-  outcome: outcomeEnum('outcome'),
-  yesprice:numeric('yes_price', {precision:10, scale:6}).default('0.50'),
-  noprice:numeric('no_price', {precision:10, scale:6}).default("0.50"),
   createdAt:timestamp('created_at').defaultNow(),
   expiryAt: timestamp('expiry_at').notNull(),
 })
+
+export const outComes=pgTable('outcomes',{
+    id:uuid('id').defaultRandom().primaryKey(),
+ marketId: uuid('market_id').references(() => markets.id).notNull(),
+    label:text('label').notNull(),// yes //no//Draw
+     price: numeric('price', { precision: 10, scale: 6 }).default('0.50'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => ({
+  marketIdIdx: index('outcomes_market_id_idx').on(table.marketId),
+}))
 
 
 export const positions = pgTable('positions', {
   id: uuid('id').defaultRandom().primaryKey(),
   userId: uuid('user_id').references(() => users.id).notNull(),
   marketId: uuid('market_id').references(() => markets.id).notNull(),
-  yesShares: numeric('yes_shares', { precision: 18, scale: 6 }).default('0'),
-  noShares: numeric('no_shares', { precision: 18, scale: 6 }).default('0'),
+  outcomeId: uuid('outcome_id').references(() => outComes.id).notNull(),
+  shares: numeric('shares', { precision: 18, scale: 6 }).default('0'),
   avgBuyPrice: numeric('avg_buy_price', { precision: 10, scale: 6 }).default('0'),
   updatedAt: timestamp('updated_at').defaultNow(),
 },(table)=>({
@@ -38,9 +46,10 @@ export const orders=pgTable('orders',{
      id:uuid('id').defaultRandom().primaryKey(),
      userId:uuid('user_id').references(()=> users.id).notNull(),
      marketId:uuid('market_id').references(()=> markets.id).notNull(),
-     side:sideEnum('side').notNull(),
+    outcomeId: uuid('outcome_id').references(() => outComes.id).notNull(),
      type:typeEnum('type').notNull(),
      amount:numeric('amount',{precision:18, scale:6}).notNull(),
+    filledAmount: numeric('filled_amount', { precision: 18, scale: 6 }).default('0'),
     price: numeric('price', { precision: 10, scale: 6 }).notNull(),
      status:statusEnum('status').default("OPEN"),
      createdAt: timestamp('created_at').defaultNow(),
@@ -54,7 +63,7 @@ export const  tradeHistory=pgTable('trade_history',{
     id:uuid('id').defaultRandom().primaryKey(),
     userId:uuid('user_id').references(()=> users.id).notNull(),
     marketId:uuid('market_id').references(()=> markets.id).notNull(),
-    side:sideEnum('side').notNull(),
+    outcomeId: uuid('outcome_id').references(() => outComes.id).notNull(),
     type:typeEnum('type').notNull(),
     amount:numeric('amount', {precision:18, scale:6}).notNull(),
     price: numeric('price', { precision: 10, scale: 6 }).notNull(),

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "locked_balance" numeric(18, 6) DEFAULT '0';
